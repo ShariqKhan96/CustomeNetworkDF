@@ -2,6 +2,7 @@ package com.webxert.customenetworkdf.repositories;
 
 import android.arch.lifecycle.MutableLiveData;
 import android.content.Context;
+import android.os.Handler;
 import android.util.Log;
 
 import com.webxert.customenetworkdf.data.Employees;
@@ -22,13 +23,13 @@ import retrofit2.Retrofit;
  * Created by hp on 4/22/2019.
  */
 /*
-* Singleton Pattern
-* */
+ * Singleton Pattern
+ * */
 public class DataProvider {
 
     public static DataProvider instance;
     List<Employees> users = new ArrayList<>();
-    MutableLiveData<List<Employees>> liveUsers = new MutableLiveData<>();
+
     // public static Context context = null;
     public static LoaderListener loaderListener;
 
@@ -39,9 +40,11 @@ public class DataProvider {
         return instance;
     }
 
-    public MutableLiveData<List<Employees>> endUsers() {
+    public void endUsers(final MutableLiveData<List<Employees>> employees, final LoaderListener loaderListener) {
+
         loaderListener.onCallStart();
         Retrofit retrofit = RetrofitBuilder.getRetrofit();
+
         IClient client = retrofit.create(IClient.class);
 
         client.getUsers().enqueue(new Callback<List<Employees>>() {
@@ -49,14 +52,11 @@ public class DataProvider {
             public void onResponse(Call<List<Employees>> call, Response<List<Employees>> response) {
                 loaderListener.onCallComplete();
 
-                Log.e("users", response.body().size()+"");
+                Log.e("users", response.body().size() + "");
                 if (response.code() == 200) {
                     if (response.isSuccessful()) {
-                        users.addAll(response.body());
+                        employees.setValue(response.body());
                     }
-                    liveUsers.postValue(users);
-                    //liveUsers.setValue(users);
-                    //liveUsers.postValue(users);
                 }
 
             }
@@ -69,7 +69,25 @@ public class DataProvider {
             }
         });
 
-        return liveUsers;
+
     }
 
+    public void addUser(final Employees employees, final MutableLiveData<List<Employees>> liveUsers) {
+        // loaderListener.onCallStart();
+        new Handler().postDelayed(new Runnable() {
+            @Override
+            public void run() {
+
+                List<Employees> temp = new ArrayList<>(liveUsers.getValue());
+                Log.e("BEFORE: ", liveUsers.getValue().size() + "");
+                temp.add(employees);
+                liveUsers.setValue(temp);
+                // liveUsers.postValue(temp);
+                Log.e("AFTER : ", liveUsers.getValue().size() + "");
+                //    loaderListener.onCallComplete();
+
+
+            }
+        }, 2000);
+    }
 }
